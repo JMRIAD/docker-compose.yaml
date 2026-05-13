@@ -29,11 +29,11 @@ et les envoie au serveur GLPI.
 
 | Catégorie | Données collectées |
 |-----------|-------------------|
-| 🖥 Matériel | CPU, RAM, disques, carte mère, BIOS |
-| 🌐 Réseau | Adresses IP, MAC, interfaces réseau |
-| 💿 Logiciels | Applications installées, versions, licences |
-| 🖨 Périphériques | Imprimantes, écrans, périphériques USB |
-| ⚙️ Système | OS, version, mises à jour, nom d'hôte |
+|  Matériel | CPU, RAM, disques, carte mère, BIOS |
+|  Réseau | Adresses IP, MAC, interfaces réseau |
+|  Logiciels | Applications installées, versions, licences |
+|  Périphériques | Imprimantes, écrans, périphériques USB |
+|  Système | OS, version, mises à jour, nom d'hôte |
 
 ---
 

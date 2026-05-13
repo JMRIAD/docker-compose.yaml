@@ -1,4 +1,4 @@
-# 📦 Documentation — Installation de l'Agent GLPI
+#  Documentation — Installation de l'Agent GLPI
 
 > Ce document explique comment installer et configurer l'agent GLPI sur les
 > machines clientes afin qu'elles remontent leur inventaire au serveur GLPI.

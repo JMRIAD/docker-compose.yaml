@@ -1,0 +1,198 @@
+# =============================================================================
+# docker-compose.yaml — Service GLPI conteneurisé
+# Formateur : Boris Rose | Gestion du Parc Informatique
+# =============================================================================
+# docker-compose.yaml est le fichier de définition d'une application multi-
+# conteneurs Docker. Il décrit les services, réseaux et volumes nécessaires.
+# On le lance avec : docker compose up -d
+# =============================================================================
+
+version: "3.8"
+# ^ Spécifie la version du format docker-compose utilisée.
+#   "3.8" est compatible avec Docker Engine 19.03+ et supporte toutes
+#   les fonctionnalités modernes (secrets, configs, deploy...).
+
+# =============================================================================
+# SERVICES : chaque service = un conteneur Docker
+# =============================================================================
+services:
+
+  # ---------------------------------------------------------------------------
+  # SERVICE 1 : Base de données MariaDB
+  # GLPI nécessite une base de données relationnelle pour stocker :
+  # tickets, inventaire, utilisateurs, configurations, etc.
+  # ---------------------------------------------------------------------------
+  db:
+    # 'db' est le nom du service. Les autres conteneurs peuvent le joindre
+    # via ce nom comme hostname (ex: hostname 'db' sur le réseau interne).
+
+    image: mariadb:10.11
+    # ^ Définit l'image Docker à utiliser depuis Docker Hub.
+    #   Format : nom_image:tag (tag = version).
+    #   mariadb:10.11 est une version LTS stable, compatible GLPI 10.x.
+    #   Sans tag, Docker utilise 'latest' (déconseillé en prod : imprévisible).
+
+    container_name: glpi_db
+    # ^ Donne un nom fixe au conteneur (sinon Docker génère un nom aléatoire).
+    #   Utile pour les commandes : docker exec -it glpi_db bash
+
+    restart: unless-stopped
+    # ^ Politique de redémarrage automatique du conteneur.
+    #   - 'no'             : jamais redémarré (défaut)
+    #   - 'always'         : toujours redémarré, même si on l'arrête manuellement
+    #   - 'unless-stopped' : redémarre sauf si arrêté manuellement (recommandé)
+    #   - 'on-failure'     : redémarre uniquement en cas d'erreur
+
+    environment:
+    # ^ Définit les variables d'environnement injectées dans le conteneur.
+    #   Ces variables configurent MariaDB au premier démarrage.
+    #   IMPORTANT : En production, utiliser des Docker Secrets à la place.
+
+      MARIADB_ROOT_PASSWORD: rootpassword
+      # ^ Mot de passe du compte root de MariaDB.
+      #   Nécessaire pour l'initialisation de la base.
+      #   À changer impérativement en production !
+
+      MARIADB_DATABASE: glpidb
+      # ^ Nom de la base de données créée automatiquement au premier démarrage.
+      #   GLPI utilisera cette base pour stocker toutes ses données.
+
+      MARIADB_USER: glpiuser
+      # ^ Nom de l'utilisateur applicatif créé pour GLPI.
+      #   GLPI utilisera ce compte (pas root) pour se connecter à la BDD.
+      #   Principe du moindre privilège : l'utilisateur n'a accès qu'à glpidb.
+
+      MARIADB_PASSWORD: glpipassword
+      # ^ Mot de passe de l'utilisateur glpiuser.
+      #   Doit correspondre exactement au DB_PASSWORD du service glpi ci-dessous.
+      #   À changer impérativement en production !
+
+    volumes:
+    # ^ Monte des volumes pour persister les données en dehors du conteneur.
+    #   Sans volume, toutes les données sont perdues à la suppression du conteneur.
+
+      - db_data:/var/lib/mysql
+      # ^ Syntaxe : nom_volume:chemin_dans_le_conteneur
+      #   /var/lib/mysql : répertoire où MariaDB stocke ses fichiers de BDD.
+      #   db_data        : volume nommé déclaré en bas du fichier (section volumes:).
+      #   Les volumes nommés sont gérés par Docker et persistent entre redémarrages.
+
+    networks:
+      - glpi_network
+      # ^ Connecte ce conteneur au réseau 'glpi_network' défini plus bas.
+      #   Seuls les conteneurs sur le même réseau peuvent communiquer entre eux.
+      #   Isolation réseau : la BDD n'est pas accessible depuis l'extérieur.
+
+  # ---------------------------------------------------------------------------
+  # SERVICE 2 : Application GLPI
+  # Le conteneur principal qui fait tourner l'interface web GLPI (PHP/Apache).
+  # ---------------------------------------------------------------------------
+  glpi:
+    image: diouxx/glpi:latest
+    # ^ Image Docker communautaire pour GLPI.
+    #   diouxx/glpi est l'image la plus utilisée pour GLPI conteneurisé.
+    #   Elle embarque Apache + PHP + GLPI préconfigurés.
+    #   Alternative officielle : glpi/glpi (plus récente, moins documentée).
+
+    container_name: glpi_app
+    # ^ Nom fixe du conteneur applicatif GLPI.
+
+    restart: unless-stopped
+    # ^ Même politique que la BDD : redémarre automatiquement sauf arrêt manuel.
+
+    depends_on:
+      - db
+      # ^ Indique que ce service doit démarrer APRÈS le service 'db'.
+      #   IMPORTANT : depends_on attend que le conteneur db soit DÉMARRÉ,
+      #   pas nécessairement que MariaDB soit prête à accepter des connexions.
+      #   Pour une attente de disponibilité réelle, utiliser un healthcheck.
+
+    environment:
+      TIMEZONE: Europe/Paris
+      # ^ Fuseau horaire du serveur GLPI.
+      #   Affecte les horodatages des tickets, inventaires, alertes.
+      #   Doit correspondre au fuseau horaire de l'organisation.
+
+      DB_HOST: db
+      # ^ Hostname du serveur de base de données.
+      #   'db' correspond au nom du service MariaDB défini plus haut.
+      #   Docker Compose crée automatiquement une résolution DNS interne
+      #   permettant aux conteneurs de se joindre par nom de service.
+
+      DB_PORT: 3306
+      # ^ Port d'écoute de MariaDB (port standard MySQL/MariaDB).
+      #   GLPI se connecte à la BDD sur ce port via le réseau interne Docker.
+
+      DB_NAME: glpidb
+      # ^ Nom de la base de données GLPI. Doit correspondre à MARIADB_DATABASE.
+
+      DB_USER: glpiuser
+      # ^ Utilisateur BDD. Doit correspondre à MARIADB_USER.
+
+      DB_PASSWORD: glpipassword
+      # ^ Mot de passe BDD. Doit correspondre à MARIADB_PASSWORD.
+
+    ports:
+      - "8080:80"
+      # ^ Mappe un port de l'hôte vers un port du conteneur.
+      #   Syntaxe : port_hote:port_conteneur
+      #   8080 : port accessible depuis l'extérieur (navigateur : http://IP:8080)
+      #   80   : port Apache à l'intérieur du conteneur (HTTP standard)
+      #   Pour HTTPS, ajouter un reverse proxy (Nginx/Traefik) devant GLPI.
+
+    volumes:
+      - glpi_files:/var/www/html/glpi/files
+      # ^ Persiste les fichiers uploadés dans GLPI (pièces jointes de tickets,
+      #   documents, images...) dans /var/www/html/glpi/files.
+
+      - glpi_plugins:/var/www/html/glpi/plugins
+      # ^ Persiste les plugins GLPI installés.
+      #   Permet d'ajouter FusionInventory, OCS Inventory, etc. sans les perdre.
+
+      - glpi_config:/var/www/html/glpi/config
+      # ^ Persiste la configuration GLPI (config_db.php, etc.).
+      #   Évite de reconfigurer GLPI à chaque recréation du conteneur.
+
+    networks:
+      - glpi_network
+      # ^ Connecte GLPI au même réseau que la BDD pour la communication interne.
+
+# =============================================================================
+# VOLUMES : stockage persistant géré par Docker
+# =============================================================================
+volumes:
+# ^ Déclare les volumes nommés utilisés par les services ci-dessus.
+#   Docker crée ces volumes dans /var/lib/docker/volumes/ sur l'hôte.
+#   Ils persistent même si les conteneurs sont supprimés (docker compose down).
+#   Pour tout supprimer y compris les volumes : docker compose down -v
+
+  db_data:
+  # ^ Volume pour les données MariaDB.
+  #   Contient toutes les tables et données de la base glpidb.
+
+  glpi_files:
+  # ^ Volume pour les fichiers uploadés dans GLPI.
+
+  glpi_plugins:
+  # ^ Volume pour les plugins GLPI.
+
+  glpi_config:
+  # ^ Volume pour la configuration GLPI.
+
+# =============================================================================
+# NETWORKS : réseau virtuel isolé pour les conteneurs
+# =============================================================================
+networks:
+# ^ Déclare les réseaux Docker utilisés par les services.
+
+  glpi_network:
+  # ^ Réseau bridge personnalisé pour GLPI.
+  #   'bridge' = réseau virtuel isolé sur l'hôte Docker.
+  #   Les conteneurs sur ce réseau peuvent se joindre par nom de service.
+  #   Isolation : les conteneurs ne sont pas accessibles depuis d'autres réseaux
+  #   Docker sauf exposition explicite via 'ports:'.
+    driver: bridge
+    # ^ Type de réseau Docker.
+    #   - bridge  : réseau local sur l'hôte (défaut, le plus courant)
+    #   - host    : partage le réseau de l'hôte (moins isolé)
+    #   - overlay : pour Docker Swarm / multi-hôtes

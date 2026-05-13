@@ -1,11 +1,11 @@
-# 🐳 GLPI Dockerisé — Service ITSM conteneurisé
+#  GLPI Dockerisé — Service ITSM conteneurisé
 
 > Déploiement complet de GLPI (Gestionnaire Libre de Parc Informatique) via Docker Compose,
 > incluant la base de données MariaDB et la documentation d'installation de l'agent GLPI.
 
 ---
 
-## 📋 Table des matières
+##  Table des matières
 
 1. [Présentation](#-présentation)
 2. [Prérequis](#-prérequis)
@@ -17,17 +17,17 @@
 
 ---
 
-## 📖 Présentation
+##  Présentation
 
 Ce dépôt contient tout le nécessaire pour déployer un service **GLPI complet** en quelques
 minutes grâce à Docker.
 
 **GLPI** (Gestionnaire Libre de Parc Informatique) est un outil ITSM open-source qui permet de :
 
-- 📦 Gérer l'inventaire du parc informatique (matériel, logiciels, licences)
-- 🎫 Gérer les tickets d'incidents et demandes utilisateurs (helpdesk)
-- 🔄 Suivre les changements et mises en production
-- 📊 Générer des rapports sur le parc
+-  Gérer l'inventaire du parc informatique (matériel, logiciels, licences)
+-  Gérer les tickets d'incidents et demandes utilisateurs (helpdesk)
+-  Suivre les changements et mises en production
+-  Générer des rapports sur le parc
 
 L'architecture Docker de ce projet comprend **2 conteneurs** :
 
@@ -38,7 +38,7 @@ L'architecture Docker de ce projet comprend **2 conteneurs** :
 
 ---
 
-## ✅ Prérequis
+##  Prérequis
 
 Avant de commencer, vérifier que les outils suivants sont installés :
 
@@ -49,7 +49,7 @@ Avant de commencer, vérifier que les outils suivants sont installés :
 
 ---
 
-## 📁 Structure du dépôt
+##  Structure du dépôt
 
 ```
 glpi-docker/
@@ -60,7 +60,7 @@ glpi-docker/
 
 ---
 
-## 🚀 Lancer le service
+##  Lancer le service
 
 ### Étape 1 — Cloner le dépôt
 
@@ -105,7 +105,7 @@ Les deux conteneurs doivent afficher **Up**.
 
 ---
 
-## 🌐 Accéder à l'interface
+##  Accéder à l'interface
 
 Une fois les conteneurs démarrés, ouvrir un navigateur et accéder à :
 
@@ -143,23 +143,23 @@ http://localhost:8080
 | `normal` | `normal` | Utilisateur |
 | `post-only` | `postonly` | Saisie de tickets uniquement |
 
-> ⚠️ **Changer ces mots de passe immédiatement** après la première connexion en production.
+>  **Changer ces mots de passe immédiatement** après la première connexion en production.
 
 ---
 
-## 🛑 Arrêter le service
+##  Arrêter le service
 
 ```bash
 # Arrêter les conteneurs sans supprimer les données
 docker compose down
 
-# Arrêter ET supprimer tous les volumes (⚠️ perte de données)
+# Arrêter ET supprimer tous les volumes ( perte de données)
 docker compose down -v
 ```
 
 ---
 
-## 🔧 Commandes utiles
+##  Commandes utiles
 
 ```bash
 # Voir les logs en temps réel
@@ -181,19 +181,17 @@ docker exec -it glpi_db mysql -u glpiuser -pglpipassword glpidb
 
 ---
 
-## 📚 Documentation complémentaire
+##  Documentation complémentaire
 
 - [`GLPI-AGENT-INSTALL.md`](./GLPI-AGENT-INSTALL.md) — Installer l'agent GLPI sur les postes clients
 - [`docker-compose.yaml`](./docker-compose.yaml) — Configuration complète annotée ligne par ligne
 
 ---
 
-## 👤 Auteur
+##  Auteur
 
-**[Votre Nom]**
+TIAKRAY MANGLE Jean Marc Riad
 Formation : Gestion du Parc Informatique et Incident
 Formateur : Boris Rose
 
 ---
-
-*Ce dépôt s'inscrit dans le cadre du portfolio obligatoire de la formation.*
